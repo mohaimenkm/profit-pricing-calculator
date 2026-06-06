@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-commerce Profit & Pricing Calculator</title>
+<style>
+  :root {
+    --primary: #2563EB;
+    --secondary: #7C3AED;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --bg: #0F172A;
+    --bg2: #1E293B;
+    --bg3: #334155;
+    --text: #F1F5F9;
+    --text2: #94A3B8;
+    --card: rgba(30,41,59,0.7);
+    --border: rgba(148,163,184,0.15);
+    --glass: rgba(255,255,255,0.05);
+  }
+  .light {
+    --bg: #F0F4FF;
+    --bg2: #FFFFFF;
+    --bg3: #E2E8F0;
+    --text: #0F172A;
+    --text2: #475569;
+    --card: rgba(255,255,255,0.85);
+    --border: rgba(0,0,0,0.1);
+    --glass: rgba(255,255,255,0.6);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: all 0.3s; }
+  body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse at 20% 20%, rgba(37,99,235,0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(124,58,237,0.15) 0%, transparent 50%); pointer-events: none; z-index: 0; }
+
+  /* HEADER */
+  header { position: sticky; top: 0; z-index: 100; background: rgba(15,23,42,0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 0 24px; }
+  .light header { background: rgba(240,244,255,0.85); }
+  .header-inner { max-width: 1600px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 12px; flex-wrap: wrap; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; white-space: nowrap; }
+  .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; -webkit-text-fill-color: white; flex-shrink: 0; }
+  .header-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  select.currency-sel { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+  .theme-toggle { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 14px; cursor: pointer; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+  .theme-toggle:hover { background: var(--glass); }
+
+  /* NAV TABS */
+  .nav-tabs { max-width: 1600px; margin: 0 auto; display: flex; gap: 4px; padding: 12px 24px 0; overflow-x: auto; scrollbar-width: none; }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn { padding: 8px 16px; border-radius: 10px 10px 0 0; border: none; background: transparent; color: var(--text2); cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap; transition: all 0.2s; border: 1px solid transparent; border-bottom: none; }
+  .tab-btn.active { background: var(--card); color: var(--primary); border-color: var(--border); }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  /* MAIN */
+  main { max-width: 1600px; margin: 0 auto; padding: 0 24px 40px; position: relative; z-index: 1; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* DASHBOARD */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin: 20px 0; }
+  .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; backdrop-filter: blur(12px); position: relative; overflow: hidden; transition: transform 0.2s; }
+  .kpi-card:hover { transform: translateY(-2px); }
+  .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 16px 16px 0 0; }
+  .kpi-card.blue::before { background: var(--primary); }
+  .kpi-card.purple::before { background: var(--secondary); }
+  .kpi-card.green::before { background: var(--success); }
+  .kpi-card.yellow::before { background: var(--warning); }
+  .kpi-card.red::before { background: var(--danger); }
+  .kpi-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .kpi-value { font-size: 1.4rem; font-weight: 800; color: var(--text); }
+  .kpi-sub { font-size: 11px; color: var(--text2); margin-top: 4px; }
+
+  /* SECTIONS */
+  .section-title { font-size: 1rem; font-weight: 700; color: var(--text); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; }
+  .section-title span { width: 4px; height: 18px; border-radius: 2px; background: linear-gradient(var(--primary), var(--secondary)); display: inline-block; }
+  .calc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+  .input-group label { font-size: 12px; color: var(--text2); font-weight: 600; }
+  .input-group input, .input-group select { background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 10px; font-size: 14px; outline: none; transition: border 0.2s; width: 100%; }
+  .input-group input:focus, .input-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  .input-group input[readonly] { background: var(--bg3); color: var(--success); font-weight: 700; }
+  .slider-wrap { display: flex; align-items: center; gap: 10px; }
+  input[type=range] { flex: 1; accent-color: var(--primary); }
+
+  /* RESULT CARDS */
+  .result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
+  .result-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; backdrop-filter: blur(10px); }
+  .result-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .result-value { font-size: 1.3rem; font-weight: 800; margin-top: 4px; }
+  .result-value.green { color: var(--success); }
+  .result-value.blue { color: var(--primary); }
+  .result-value.purple { color: var(--secondary); }
+  .result-value.yellow { color: var(--warning); }
+  .result-value.red { color: var(--danger); }
+
+  /* BUTTONS */
+  .btn { padding: 10px 18px; border-radius: 10px; border: none; cursor: pointer; font-weight: 700; font-size: 13px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.4); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { background: var(--glass); }
+  .btn-warning { background: var(--warning); color: white; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+
+  /* PRESETS */
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+  .preset-btn { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--glass); color: var(--text2); font-size: 12px; cursor: pointer; transition: all 0.2s; }
+  .preset-btn:hover, .preset-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  /* SCENARIO */
+  .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin: 16px 0; }
+  .scenario-card { background: var(--card); border: 2px solid var(--border); border-radius: 16px; padding: 18px; text-align: center; transition: all 0.3s; backdrop-filter: blur(10px); }
+  .scenario-card.best { border-color: var(--success); box-shadow: 0 0 20px rgba(16,185,129,0.2); }
+  .scenario-card h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); margin-bottom: 10px; }
+  .scenario-price { font-size: 1.5rem; font-weight: 800; }
+  .scenario-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; }
+  .scenario-stat { background: var(--glass); border-radius: 8px; padding: 6px; }
+  .scenario-stat-label { font-size: 10px; color: var(--text2); }
+  .scenario-stat-val { font-size: 13px; font-weight: 700; }
+
+  /* AI RECOMMENDATIONS */
+  .ai-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin: 16px 0; }
+  .ai-card { border-radius: 14px; padding: 16px; display: flex; gap: 12px; align-items: flex-start; }
+  .ai-card.info { background: rgba(37,99,235,0.12); border: 1px solid rgba(37,99,235,0.3); }
+  .ai-card.success { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); }
+  .ai-card.warning { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); }
+  .ai-card.danger { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); }
+  .ai-icon { font-size: 22px; flex-shrink: 0; }
+  .ai-text { font-size: 13px; line-height: 1.5; }
+  .ai-text strong { display: block; margin-bottom: 2px; font-size: 13px; }
+
+  /* CHARTS */
+  .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 16px 0; }
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; backdrop-filter: blur(10px); }
+  .chart-title { font-size: 13px; font-weight: 700; color: var(--text2); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+  canvas { width: 100% !important; }
+
+  /* SAVED PRODUCTS TABLE */
+  .table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; background: var(--card); backdrop-filter: blur(10px); }
+  th { background: var(--bg3); color: var(--text2); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 16px; text-align: left; }
+  td { padding: 12px 16px; font-size: 13px; border-top: 1px solid var(--border); }
+  tr:hover td { background: var(--glass); }
+
+  /* SEARCH */
+  .search-row { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .search-input { background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 9px 14px; border-radius: 10px; font-size: 14px; outline: none; flex: 1; min-width: 180px; }
+  .search-input:focus { border-color: var(--primary); }
+
+  /* UTILS */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .badge-green { background: rgba(16,185,129,0.15); color: var(--success); }
+  .badge-yellow { background: rgba(245,158,11,0.15); color: var(--warning); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--danger); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .tip { background: rgba(37,99,235,0.08); border-left: 3px solid var(--primary); border-radius: 0 10px 10px 0; padding: 10px 14px; font-size: 13px; color: var(--text2); margin: 10px 0; }
+  .full-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; backdrop-filter: blur(12px); margin: 16px 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+  .psy-prices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .psy-tag { padding: 6px 14px; border-radius: 20px; background: var(--bg3); border: 1px solid var(--border); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .psy-tag:hover { background: var(--primary); color: white; }
+  .animate-num { transition: all 0.4s; }
+  .progress-bar { height: 6px; border-radius: 3px; background: var(--bg3); overflow: hidden; margin-top: 6px; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+  @media (max-width: 768px) { .header-inner { padding: 8px 0; } main { padding: 0 12px 40px; } .nav-tabs { padding: 12px 12px 0; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">📊</div>
+      E-commerce Profit & Pricing Calculator
+    </div>
+    <div class="header-controls">
+      <select class="currency-sel" id="currencySel" onchange="setCurrency()">
+        <option value="BDT">৳ BDT</option>
+        <option value="USD">$ USD</option>
+        <option value="EUR">€ EUR</option>
+        <option value="GBP">£ GBP</option>
+        <option value="INR">₹ INR</option>
+      </select>
+      <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">☀️</span> <span id="themeLabel">Light</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="nav-tabs">
+  <button class="tab-btn active" onclick="showTab('dashboard')">📊 Dashboard</button>
+  <button class="tab-btn" onclick="showTab('costs')">💰 Costs</button>
+  <button class="tab-btn" onclick="showTab('marketing')">📣 Marketing</button>
+  <button class="tab-btn" onclick="showTab('pricing')">🏷️ Pricing</button>
+  <button class="tab-btn" onclick="showTab('scenarios')">⚖️ Scenarios</button>
+  <button class="tab-btn" onclick="showTab('charts')">📈 Charts</button>
+  <button class="tab-btn" onclick="showTab('tools')">🛠️ Tools</button>
+  <button class="tab-btn" onclick="showTab('planner')">🎯 Planner</button>
+  <button class="tab-btn" onclick="showTab('saved')">💾 Saved</button>
+</div>
+
+<main>
+
+<!-- DASHBOARD TAB -->
+<div class="tab-panel active" id="tab-dashboard">
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card blue"><div class="kpi-label">Selling Price</div><div class="kpi-value animate-num" id="d-price">৳0</div><div class="kpi-sub">Suggested</div></div>
+    <div class="kpi-card green"><div class="kpi-label">Net Profit</div><div class="kpi-value animate-num" id="d-profit">৳0</div><div class="kpi-sub">Per unit</div></div>
+    <div class="kpi-card purple"><div class="kpi-label">Profit Margin</div><div class="kpi-value animate-num" id="d-margin">0%</div><div class="kpi-sub">Net margin</div></div>
+    <div class="kpi-card yellow"><div class="kpi-label">ROI</div><div class="kpi-value animate-num" id="d-roi">0%</div><div class="kpi-sub">Return on investment</div></div>
+    <div class="kpi-card red"><div class="kpi-label">Total Cost</div><div class="kpi-value animate-num" id="d-cost">৳0</div><div class="kpi-sub">Per unit</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">Break Even</div><div class="kpi-value animate-num" id="d-be">0 units</div><div class="kpi-sub">To recover costs</div></div>
+    <div class="kpi-card green"><div class="kpi-label">Monthly Profit</div><div class="kpi-value animate-num" id="d-monthly">৳0</div><div class="kpi-sub">Projected</div></div>
+    <div class="kpi-card purple"><div class="kpi-label">Annual Profit</div><div class="kpi-value animate-num" id="d-annual">৳0</div><div class="kpi-sub">Projected</div></div>
+  </div>
+
+  <div id="aiSection"></div>
+
+  <div class="section-title"><span></span> Quick Calculate</div>
+  <div class="calc-grid">
+    <div class="input-group"><label>Product Cost Price</label><input type="number" id="q-cost" placeholder="e.g. 500" oninput="quickCalc()"></div>
+    <div class="input-group"><label>Profit Margin %</label>
+      <div class="slider-wrap">
+        <input type="range" id="q-margin-range" min="1" max="200" value="30" oninput="document.getElementById('q-margin').value=this.value; quickCalc()">
+        <input type="number" id="q-margin" value="30" oninput="document.getElementById('q-margin-range').value=this.value; quickCalc()" style="width:70px">
+      </div>
+    </div>
+    <div class="input-group"><label>Expected Monthly Orders</label><input type="number" id="q-orders" placeholder="e.g. 100" oninput="quickCalc()"></div>
+  </div>
+  <div class="presets">
+    <span style="font-size:12px;color:var(--text2);align-self:center">Margin Presets:</span>
+    <button class="preset-btn" onclick="setMarginPreset(15)">15%</button>
+    <button class="preset-btn" onclick="setMarginPreset(20)">20%</button>
+    <button class="preset-btn" onclick="setMarginPreset(25)">25%</button>
+    <button class="preset-btn active" onclick="setMarginPreset(30)">30%</button>
+    <button class="preset-btn" onclick="setMarginPreset(40)">40%</button>
+    <button class="preset-btn" onclick="setMarginPreset(50)">50%</button>
+    <button class="preset-btn" onclick="setMarginPreset(60)">60%</button>
+  </div>
+</div>
+
+<!-- COSTS TAB -->
+<div class="tab-panel" id="tab-costs">
+  <div class="section-title"><span></span> Product Cost Inputs</div>
+  <div class="calc-grid">
+    <div class="input-group"><label>Product Cost Price</label><input type="number" id="costPrice" placeholder="e.g. 300" oninput="calculate()"></div>
+    <div class="input-group"><label>Purchase Quantity</label><input type="number" id="purchaseQty" placeholder="e.g. 100" oninput="calculate()"></div>
+    <div class="input-group"><label>Cost Per Unit (Auto)</label><input type="number" id="costPerUnit" readonly placeholder="Auto calculated"></div>
+    <div class="input-group"><label>Supplier Delivery Cost</label><input type="number" id="supplierDelivery" placeholder="e.g. 50" oninput="calculate()"></div>
+    <div class="input-group"><label>Import/Shipping Cost</label><input type="number" id="importCost" placeholder="e.g. 30" oninput="calculate()"></div>
+    <div class="input-group"><label>Packaging Cost</label><input type="number" id="packagingCost" placeholder="e.g. 20" oninput="calculate()"></div>
+    <div class="input-group"><label>Courier Cost</label><input type="number" id="courierCost" placeholder="e.g. 60" oninput="calculate()"></div>
+    <div class="input-group"><label>Cash on Delivery Charge</label><input type="number" id="codCharge" placeholder="e.g. 20" oninput="calculate()"></div>
+    <div class="input-group"><label>Payment Gateway Fee (%)</label><input type="number" id="pgFee" placeholder="e.g. 1.5" step="0.1" oninput="calculate()"></div>
+    <div class="input-group"><label>Warehouse Cost</label><input type="number" id="warehouseCost" placeholder="e.g. 10" oninput="calculate()"></div>
+    <div class="input-group"><label>Employee Cost Allocation</label><input type="number" id="employeeCost" placeholder="e.g. 30" oninput="calculate()"></div>
+    <div class="input-group"><label>Miscellaneous Cost</label><input type="number" id="miscCost" placeholder="e.g. 10" oninput="calculate()"></div>
+    <div class="input-group"><label>Returns/Damage Reserve (%)</label><input type="number" id="returnReserve" placeholder="e.g. 5" step="0.1" oninput="calculate()"></div>
+    <div class="input-group"><label>Tax/VAT (%)</label><input type="number" id="taxVat" placeholder="e.g. 15" step="0.1" oninput="calculate()"></div>
+  </div>
+
+  <hr class="divider">
+  <div class="section-title"><span></span> Cost Summary</div>
+  <div class="result-grid">
+    <div class="result-card"><div class="result-label">Total Fixed Costs</div><div class="result-value blue" id="r-fixedCost">৳0</div></div>
+    <div class="result-card"><div class="result-label">Returns Reserve</div><div class="result-value yellow" id="r-returnAmt">৳0</div></div>
+    <div class="result-card"><div class="result-label">Tax/VAT Amount</div><div class="result-value yellow" id="r-taxAmt">৳0</div></div>
+    <div class="result-card"><div class="result-label">Total Product Cost</div><div class="result-value green" id="r-totalProductCost">৳0</div></div>
+  </div>
+</div>
+
+<!-- MARKETING TAB -->
+<div class="tab-panel" id="tab-marketing">
+  <div class="section-title"><span></span> Marketing Cost Inputs</div>
+  <div class="calc-grid">
+    <div class="input-group"><label>Facebook Ads Cost/Product</label><input type="number" id="fbAds" placeholder="e.g. 50" oninput="calculate()"></div>
+    <div class="input-group"><label>Google Ads Cost/Product</label><input type="number" id="googleAds" placeholder="e.g. 30" oninput="calculate()"></div>
+    <div class="input-group"><label>Influencer Cost/Product</label><input type="number" id="influencerCost" placeholder="e.g. 20" oninput="calculate()"></div>
+    <div class="input-group"><label>Affiliate Commission</label><input type="number" id="affiliateCom" placeholder="e.g. 15" oninput="calculate()"></div>
+    <div class="input-group"><label>Promotional Discounts</label><input type="number" id="promoDiscount" placeholder="e.g. 10" oninput="calculate()"></div>
+    <div class="input-group"><label>Campaign Budget</label><input type="number" id="campaignBudget" placeholder="e.g. 5000" oninput="calculate()"></div>
+    <div class="input-group"><label>Expected Conversion Rate (%)</label><input type="number" id="conversionRate" placeholder="e.g. 3" step="0.1" oninput="calculate()"></div>
+    <div class="input-group"><label>Expected Orders</label><input type="number" id="expectedOrders" placeholder="e.g. 100" oninput="calculate()"></div>
+  </div>
+
+  <hr class="divider">
+  <div class="section-title"><span></span> Marketing Metrics</div>
+  <div class="result-grid">
+    <div class="result-card"><div class="result-label">Customer Acquisition Cost</div><div class="result-value blue" id="r-cac">৳0</div></div>
+    <div class="result-card"><div class="result-label">Marketing Cost/Order</div><div class="result-value purple" id="r-mktCost">৳0</div></div>
+    <div class="result-card"><div class="result-label">Total Marketing Cost</div><div class="result-value yellow" id="r-totalMktCost">৳0</div></div>
+    <div class="result-card"><div class="result-label">Ad Spend % of Revenue</div><div class="result-value red" id="r-adSpendPct">0%</div></div>
+  </div>
+</div>
+
+<!-- PRICING TAB -->
+<div class="tab-panel" id="tab-pricing">
+  <div class="section-title"><span></span> Profit Settings</div>
+  <div class="full-card">
+    <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="profitType" value="margin" checked onchange="calculate()"> Profit Margin %</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="profitType" value="fixed" onchange="calculate()"> Fixed Profit Amount</label>
+    </div>
+    <div class="calc-grid">
+      <div class="input-group">
+        <label>Profit Margin %</label>
+        <div class="slider-wrap">
+          <input type="range" id="profitMarginRange" min="1" max="200" value="30" oninput="document.getElementById('profitMarginInput').value=this.value; calculate()">
+          <input type="number" id="profitMarginInput" value="30" oninput="document.getElementById('profitMarginRange').value=this.value; calculate()" style="width:80px">
+        </div>
+      </div>
+      <div class="input-group"><label>Fixed Profit Amount</label><input type="number" id="fixedProfit" placeholder="e.g. 150" oninput="calculate()"></div>
+    </div>
+    <div class="presets" style="margin-top:10px">
+      <span style="font-size:12px;color:var(--text2);align-self:center">Quick Presets:</span>
+      <button class="preset-btn" onclick="applyPreset(15)">15%</button>
+      <button class="preset-btn" onclick="applyPreset(20)">20%</button>
+      <button class="preset-btn" onclick="applyPreset(25)">25%</button>
+      <button class="preset-btn active" onclick="applyPreset(30)">30%</button>
+      <button class="preset-btn" onclick="applyPreset(40)">40%</button>
+      <button class="preset-btn" onclick="applyPreset(50)">50%</button>
+      <button class="preset-btn" onclick="applyPreset(60)">60%</button>
+    </div>
+  </div>
+
+  <div class="section-title"><span></span> Selling Price Results</div>
+  <div class="result-grid">
+    <div class="result-card"><div class="result-label">Total Product Cost</div><div class="result-value blue" id="r-totalProdCost2">৳0</div></div>
+    <div class="result-card"><div class="result-label">Total Marketing Cost</div><div class="result-value purple" id="r-totalMktCost2">৳0</div></div>
+    <div class="result-card"><div class="result-label">Total Cost/Product</div><div class="result-value yellow" id="r-totalCost">৳0</div></div>
+    <div class="result-card"><div class="result-label">Desired Profit</div><div class="result-value green" id="r-desiredProfit">৳0</div></div>
+    <div class="result-card"><div class="result-label">Suggested Selling Price</div><div class="result-value green" id="r-suggestedPrice">৳0</div></div>
+    <div class="result-card"><div class="result-label">Rounded Selling Price</div><div class="result-value green" id="r-roundedPrice">৳0</div></div>
+  </div>
+
+  <div class="section-title"><span></span> Psychological Pricing</div>
+  <div class="tip">These prices feel cheaper to buyers while maximizing your revenue. Click to select.</div>
+  <div class="psy-prices" id="psyPrices"></div>
+
+  <hr class="divider">
+  <div class="section-title"><span></span> Advanced Metrics</div>
+  <div class="result-grid">
+    <div class="result-card"><div class="result-label">Gross Profit</div><div class="result-value green" id="r-grossProfit">৳0</div></div>
+    <div class="result-card"><div class="result-label">Net Profit</div><div class="result-value green" id="r-netProfit">৳0</div></div>
+    <div class="result-card"><div class="result-label">Profit Margin %</div><div class="result-value purple" id="r-profitMarginPct">0%</div></div>
+    <div class="result-card"><div class="result-label">Markup %</div><div class="result-value blue" id="r-markup">0%</div></div>
+    <div class="result-card"><div class="result-label">ROI %</div><div class="result-value yellow" id="r-roi">0%</div></div>
+    <div class="result-card"><div class="result-label">Break Even (Sales)</div><div class="result-value red" id="r-beSales">৳0</div></div>
+    <div class="result-card"><div class="result-label">Break Even (Units)</div><div class="result-value red" id="r-beUnits">0</div></div>
+    <div class="result-card"><div class="result-label">Contribution Margin</div><div class="result-value blue" id="r-contribMargin">৳0</div></div>
+    <div class="result-card"><div class="result-label">Monthly Profit (proj.)</div><div class="result-value green" id="r-monthlyProfit">৳0</div></div>
+    <div class="result-card"><div class="result-label">Annual Profit (proj.)</div><div class="result-value green" id="r-annualProfit">৳0</div></div>
+  </div>
+
+  <hr class="divider">
+  <div class="section-title"><span></span> Save Calculation</div>
+  <div class="calc-grid">
+    <div class="input-group"><label>Product Name</label><input type="text" id="saveName" placeholder="e.g. Premium T-Shirt"></div>
+    <div class="input-group"><label>Category</label><input type="text" id="saveCat" placeholder="e.g. Apparel"></div>
+    <div class="input-group"><label>SKU</label><input type="text" id="saveSku" placeholder="e.g. TSHRT-001"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="saveProduct()">💾 Save Product</button>
+    <button class="btn btn-success" onclick="downloadPDF()">📄 Download PDF</button>
+    <button class="btn btn-outline" onclick="exportCSV()">📊 Export CSV</button>
+    <button class="btn btn-outline" onclick="window.print()">🖨️ Print</button>
+    <button class="btn btn-danger" onclick="resetAll()">🔄 Reset All</button>
+  </div>
+</div>
+
+<!-- SCENARIOS TAB -->
+<div class="tab-panel" id="tab-scenarios">
+  <div class="section-title"><span></span> Scenario Comparison</div>
+  <div class="tip">Based on your current cost inputs, here are 3 pricing strategies. The best one is highlighted.</div>
+  <div class="scenario-grid" id="scenarioGrid"></div>
+</div>
+
+<!-- CHARTS TAB -->
+<div class="tab-panel" id="tab-charts">
+  <div class="section-title"><span></span> Visual Analytics</div>
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">📊 Cost Breakdown</div><canvas id="costPieChart" height="220"></canvas></div>
+    <div class="chart-card"><div class="chart-title">💰 Profit Distribution</div><canvas id="profitBarChart" height="220"></canvas></div>
+    <div class="chart-card"><div class="chart-title">📈 Margin Comparison</div><canvas id="marginChart" height="220"></canvas></div>
+    <div class="chart-card"><div class="chart-title">🗓️ Monthly Revenue Projection</div><canvas id="revenueChart" height="220"></canvas></div>
+  </div>
+</div>
+
+<!-- TOOLS TAB -->
+<div class="tab-panel" id="tab-tools">
+  <div class="section-title"><span></span> Mini Calculators</div>
+  <div class="two-col">
+    <!-- Markup Calculator -->
+    <div class="full-card">
+      <div class="section-title" style="margin-top:0"><span></span> Markup Calculator</div>
+      <div class="calc-grid">
+        <div class="input-group"><label>Cost Price</label><input type="number" id="mkCost" placeholder="e.g. 300" oninput="toolCalcs()"></div>
+        <div class="input-group"><label>Selling Price</label><input type="number" id="mkSell" placeholder="e.g. 500" oninput="toolCalcs()"></div>
+      </div>
+      <div class="result-card" style="margin-top:10px"><div class="result-label">Markup %</div><div class="result-value green" id="t-markup">0%</div></div>
+      <div class="result-card" style="margin-top:8px"><div class="result-label">Profit Margin %</div><div class="result-value blue" id="t-margin">0%</div></div>
+    </div>
+    <!-- VAT Calculator -->
+    <div class="full-card">
+      <div class="section-title" style="margin-top:0"><span></span> VAT Calculator</div>
+      <div class="calc-grid">
+        <div class="input-group"><label>Price (excl. VAT)</label><input type="number" id="vatPrice" placeholder="e.g. 1000" oninput="toolCalcs()"></div>
+        <div class="input-group"><label>VAT Rate (%)</label><input type="number" id="vatRate" placeholder="e.g. 15" oninput="toolCalcs()"></div>
+      </div>
+      <div class="result-card" style="margin-top:10px"><div class="result-label">VAT Amount</div><div class="result-value yellow" id="t-vatAmt">৳0</div></div>
+      <div class="result-card" style="margin-top:8px"><div class="result-label">Price incl. VAT</div><div class="result-value green" id="t-vatTotal">৳0</div></div>
+    </div>
+    <!-- Discount Calculator -->
+    <div class="full-card">
+      <div class="section-title" style="margin-top:0"><span></span> Discount Calculator</div>
+      <div class="calc-grid">
+        <div class="input-group"><label>Original Price</label><input type="number" id="discPrice" placeholder="e.g. 1500" oninput="toolCalcs()"></div>
+        <div class="input-group"><label>Discount (%)</label><input type="number" id="discPct" placeholder="e.g. 20" oninput="toolCalcs()"></div>
+      </div>
+      <div class="result-card" style="margin-top:10px"><div class="result-label">Discount Amount</div><div class="result-value red" id="t-discAmt">৳0</div></div>
+      <div class="result-card" style="margin-top:8px"><div class="result-label">Final Price</div><div class="result-value green" id="t-discFinal">৳0</div></div>
+    </div>
+    <!-- Free Shipping Impact -->
+    <div class="full-card">
+      <div class="section-title" style="margin-top:0"><span></span> Free Shipping Impact</div>
+      <div class="calc-grid">
+        <div class="input-group"><label>Product Price</label><input type="number" id="fsPrice" placeholder="e.g. 800" oninput="toolCalcs()"></div>
+        <div class="input-group"><label>Shipping Cost</label><input type="number" id="fsShip" placeholder="e.g. 80" oninput="toolCalcs()"></div>
+        <div class="input-group"><label>Current Profit</label><input type="number" id="fsProfit" placeholder="e.g. 200" oninput="toolCalcs()"></div>
+      </div>
+      <div class="result-card" style="margin-top:10px"><div class="result-label">Profit After Free Shipping</div><div class="result-value yellow" id="t-fsProfit">৳0</div></div>
+      <div class="result-card" style="margin-top:8px"><div class="result-label">Margin Impact</div><div class="result-value red" id="t-fsImpact">0%</div></div>
+    </div>
+    <!-- Bundle Pricing -->
+    <div class="full-card">
+      <div class="section-title" style="margin-top:0"><span></span> Bundle Pricing</div>
+      <div class="calc-grid">
+        <div class="input-group"><label>Unit Price</label><input type="number" id="bpUnit" placeholder="e.g. 500" oninput="toolCalcs()"></div>
+        <div class="input-group"><label>Bundle Qty</label><input type="number" id="bpQty" placeholder="e.g. 3" oninput="toolCalcs()"></div>
+        <div class="input-group"><label>Bundle Discount (%)</label><input type="number" id="bpDisc" placeholder="e.g. 10" oninput="toolCalcs()"></div>
+      </div>
+      <div class="result-card" style="margin-top:10px"><div class="result-label">Bundle Price</div><div class="result-value green" id="t-bundlePrice">৳0</div></div>
+      <div class="result-card" style="margin-top:8px"><div class="result-label">Savings for Buyer</div><div class="result-value blue" id="t-bundleSave">৳0</div></div>
+    </div>
+    <!-- Marketplace Commission -->
+    <div class="full-card">
+      <div class="section-title" style="margin-top:0"><span></span> Marketplace Commission</div>
+      <div class="calc-grid">
+        <div class="input-group"><label>Selling Price</label><input type="number" id="mpPrice" placeholder="e.g. 1000" oninput="toolCalcs()"></div>
+        <div class="input-group"><label>Commission (%)</label><input type="number" id="mpComm" placeholder="e.g. 10" oninput="toolCalcs()"></div>
+        <div class="input-group">
+          <label>Platform</label>
+          <select id="mpPlatform" onchange="toolCalcs()" style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:10px;font-size:14px;outline:none;">
+            <option value="10">Daraz (~10%)</option>
+            <option value="5">Shopify (~5%)</option>
+            <option value="8">Facebook (~8%)</option>
+            <option value="15">Custom</option>
+          </select>
+        </div>
+      </div>
+      <div class="result-card" style="margin-top:10px"><div class="result-label">Commission Amount</div><div class="result-value red" id="t-mpComm">৳0</div></div>
+      <div class="result-card" style="margin-top:8px"><div class="result-label">You Receive</div><div class="result-value green" id="t-mpReceive">৳0</div></div>
+    </div>
+    <!-- Bulk Order -->
+    <div class="full-card">
+      <div class="section-title" style="margin-top:0"><span></span> Bulk Order Pricing</div>
+      <div class="calc-grid">
+        <div class="input-group"><label>Unit Cost</label><input type="number" id="boUnit" placeholder="e.g. 300" oninput="toolCalcs()"></div>
+        <div class="input-group"><label>Bulk Qty</label><input type="number" id="boQty" placeholder="e.g. 500" oninput="toolCalcs()"></div>
+        <div class="input-group"><label>Bulk Discount (%)</label><input type="number" id="boDisc" placeholder="e.g. 15" oninput="toolCalcs()"></div>
+      </div>
+      <div class="result-card" style="margin-top:10px"><div class="result-label">Discounted Unit Cost</div><div class="result-value green" id="t-boUnit">৳0</div></div>
+      <div class="result-card" style="margin-top:8px"><div class="result-label">Total Order Value</div><div class="result-value blue" id="t-boTotal">৳0</div></div>
+      <div class="result-card" style="margin-top:8px"><div class="result-label">Total Savings</div><div class="result-value yellow" id="t-boSave">৳0</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TARGET PLANNER TAB -->
+<div class="tab-panel" id="tab-planner">
+  <div class="section-title"><span></span> 🎯 Target Profit Planner</div>
+  <div class="tip">Set your income goal and find out how many units you need to sell.</div>
+  <div class="full-card">
+    <div class="calc-grid">
+      <div class="input-group"><label>Monthly Income Goal</label><input type="number" id="planGoal" placeholder="e.g. 100000" oninput="plannerCalc()"></div>
+      <div class="input-group"><label>Profit Per Product</label><input type="number" id="planProfit" placeholder="e.g. 150" oninput="plannerCalc()"></div>
+      <div class="input-group"><label>Working Days/Month</label><input type="number" id="planDays" placeholder="e.g. 26" value="26" oninput="plannerCalc()"></div>
+    </div>
+    <hr class="divider">
+    <div class="kpi-grid">
+      <div class="kpi-card green"><div class="kpi-label">Units/Month Needed</div><div class="kpi-value" id="p-monthly">0</div><div class="kpi-sub">To hit your goal</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Units/Day Needed</div><div class="kpi-value" id="p-daily">0</div><div class="kpi-sub">Per working day</div></div>
+      <div class="kpi-card purple"><div class="kpi-label">Units/Week Needed</div><div class="kpi-value" id="p-weekly">0</div><div class="kpi-sub">Per week</div></div>
+      <div class="kpi-card yellow"><div class="kpi-label">Annual Revenue Goal</div><div class="kpi-value" id="p-annual">৳0</div><div class="kpi-sub">At this pace</div></div>
+    </div>
+    <div id="plannerInsight" style="margin-top:16px"></div>
+  </div>
+
+  <div class="section-title"><span></span> Revenue Milestones</div>
+  <div class="full-card" id="milestones"></div>
+</div>
+
+<!-- SAVED PRODUCTS TAB -->
+<div class="tab-panel" id="tab-saved">
+  <div class="section-title"><span></span> Saved Products</div>
+  <div class="search-row">
+    <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search products..." oninput="renderSaved()">
+    <button class="btn btn-danger" onclick="clearSaved()">🗑️ Clear All</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Product</th><th>Category</th><th>SKU</th><th>Selling Price</th><th>Profit</th><th>Margin</th><th>ROI</th><th>Saved</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="savedTableBody"></tbody>
+    </table>
+  </div>
+  <div id="noSaved" style="text-align:center;padding:40px;color:var(--text2);display:none">No products saved yet. Go to Pricing tab to save a calculation.</div>
+</div>
+
+</main>
+
+<script>
+// ===================== STATE =====================
+let currency = 'BDT';
+const symbols = { BDT: '৳', USD: '$', EUR: '€', GBP: '£', INR: '₹' };
+let results = {};
+let chartInstances = {};
+
+// ===================== THEME =====================
+function toggleTheme() {
+  document.body.classList.toggle('light');
+  const isLight = document.body.classList.contains('light');
+  document.getElementById('themeIcon').textContent = isLight ? '🌙' : '☀️';
+  document.getElementById('themeLabel').textContent = isLight ? 'Dark' : 'Light';
+  localStorage.setItem('ecomm_theme', isLight ? 'light' : 'dark');
+  drawCharts();
+}
+if (localStorage.getItem('ecomm_theme') === 'light') {
+  document.body.classList.add('light');
+  document.getElementById('themeIcon').textContent = '🌙';
+  document.getElementById('themeLabel').textContent = 'Dark';
+}
+
+// ===================== CURRENCY =====================
+function setCurrency() {
+  currency = document.getElementById('currencySel').value;
+  calculate();
+  plannerCalc();
+  toolCalcs();
+}
+function sym() { return symbols[currency] || '৳'; }
+function fmt(n) { return sym() + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 }); }
+function fmtPct(n) { return Number(n || 0).toFixed(1) + '%'; }
+
+// ===================== TABS =====================
+function showTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => { if (b.textContent.toLowerCase().includes(id) || (id === 'planner' && b.textContent.includes('Planner')) || (id === 'saved' && b.textContent.includes('Saved'))) b.classList.add('active'); });
+  if (id === 'charts') { setTimeout(drawCharts, 100); }
+  if (id === 'saved') renderSaved();
+  if (id === 'scenarios') renderScenarios();
+}
+
+// ===================== HELPERS =====================
+function val(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+function setTxt(id, txt) { const el = document.getElementById(id); if (el) el.textContent = txt; }
+function setVal(id, v) { const el = document.getElementById(id); if (el) el.value = v; }
+
+// ===================== MAIN CALCULATE =====================
+function calculate() {
+  const costPrice = val('costPrice');
+  const purchaseQty = val('purchaseQty') || 1;
+  const cpuAuto = costPrice / purchaseQty;
+  setVal('costPerUnit', cpuAuto.toFixed(2));
+
+  const supplierDelivery = val('supplierDelivery');
+  const importCost = val('importCost');
+  const packagingCost = val('packagingCost');
+  const courierCost = val('courierCost');
+  const codCharge = val('codCharge');
+  const pgFeePct = val('pgFee');
+  const warehouseCost = val('warehouseCost');
+  const employeeCost = val('employeeCost');
+  const miscCost = val('miscCost');
+  const returnPct = val('returnReserve');
+  const taxPct = val('taxVat');
+
+  const fixedCosts = cpuAuto + supplierDelivery + importCost + packagingCost + courierCost + codCharge + warehouseCost + employeeCost + miscCost;
+  const returnAmt = fixedCosts * (returnPct / 100);
+  const subTotal = fixedCosts + returnAmt;
+  const taxAmt = subTotal * (taxPct / 100);
+  const pgFeeAmt = subTotal * (pgFeePct / 100);
+  const totalProductCost = subTotal + taxAmt + pgFeeAmt;
+
+  // Marketing
+  const fbAds = val('fbAds');
+  const googleAds = val('googleAds');
+  const influencer = val('influencerCost');
+  const affiliate = val('affiliateCom');
+  const promo = val('promoDiscount');
+  const campaignBudget = val('campaignBudget');
+  const conversionRate = val('conversionRate') || 1;
+  const expectedOrders = val('expectedOrders') || 1;
+  const totalMktCost = fbAds + googleAds + influencer + affiliate + promo;
+  const cac = campaignBudget / (campaignBudget / 100 * conversionRate || 1);
+  const mktCostPerOrder = totalMktCost;
+  const adSpendPct = 0; // will calc after price known
+
+  // Profit settings
+  const profitType = document.querySelector('input[name=profitType]:checked')?.value || 'margin';
+  const marginPct = val('profitMarginInput');
+  const fixedProfitAmt = val('fixedProfit');
+  const totalCost = totalProductCost + totalMktCost;
+
+  let sellingPrice = 0, desiredProfit = 0;
+  if (profitType === 'margin') {
+    sellingPrice = totalCost / (1 - marginPct / 100);
+    desiredProfit = sellingPrice - totalCost;
+  } else {
+    desiredProfit = fixedProfitAmt;
+    sellingPrice = totalCost + desiredProfit;
+  }
+
+  const roundedPrice = Math.ceil(sellingPrice / 10) * 10;
+  const actualProfit = roundedPrice - totalCost;
+  const actualMarginPct = roundedPrice > 0 ? (actualProfit / roundedPrice) * 100 : 0;
+  const markup = totalCost > 0 ? (actualProfit / totalCost) * 100 : 0;
+  const roi = totalCost > 0 ? (actualProfit / totalCost) * 100 : 0;
+  const grossProfit = roundedPrice - totalProductCost;
+  const netProfit = actualProfit;
+  const contributionMargin = roundedPrice - totalMktCost;
+  const monthlyProfit = netProfit * expectedOrders;
+  const annualProfit = monthlyProfit * 12;
+  const breakEvenUnits = totalCost > 0 ? Math.ceil(totalCost / (roundedPrice - totalCost || 1)) : 0;
+  const breakEvenSales = breakEvenUnits * roundedPrice;
+  const adSpendPctCalc = roundedPrice > 0 ? (totalMktCost / roundedPrice) * 100 : 0;
+
+  results = { costPrice, totalProductCost, totalMktCost, totalCost, desiredProfit, sellingPrice, roundedPrice, actualProfit, actualMarginPct, markup, roi, grossProfit, netProfit, contributionMargin, monthlyProfit, annualProfit, breakEvenUnits, breakEvenSales, cac, mktCostPerOrder, adSpendPctCalc, expectedOrders, fixedCosts, returnAmt, taxAmt };
+
+  // Update UI
+  setTxt('r-fixedCost', fmt(fixedCosts));
+  setTxt('r-returnAmt', fmt(returnAmt));
+  setTxt('r-taxAmt', fmt(taxAmt));
+  setTxt('r-totalProductCost', fmt(totalProductCost));
+  setTxt('r-cac', fmt(cac));
+  setTxt('r-mktCost', fmt(mktCostPerOrder));
+  setTxt('r-totalMktCost', fmt(totalMktCost));
+  setTxt('r-adSpendPct', fmtPct(adSpendPctCalc));
+  setTxt('r-totalProdCost2', fmt(totalProductCost));
+  setTxt('r-totalMktCost2', fmt(totalMktCost));
+  setTxt('r-totalCost', fmt(totalCost));
+  setTxt('r-desiredProfit', fmt(desiredProfit));
+  setTxt('r-suggestedPrice', fmt(sellingPrice));
+  setTxt('r-roundedPrice', fmt(roundedPrice));
+  setTxt('r-grossProfit', fmt(grossProfit));
+  setTxt('r-netProfit', fmt(netProfit));
+  setTxt('r-profitMarginPct', fmtPct(actualMarginPct));
+  setTxt('r-markup', fmtPct(markup));
+  setTxt('r-roi', fmtPct(roi));
+  setTxt('r-beSales', fmt(breakEvenSales));
+  setTxt('r-beUnits', breakEvenUnits + ' units');
+  setTxt('r-contribMargin', fmt(contributionMargin));
+  setTxt('r-monthlyProfit', fmt(monthlyProfit));
+  setTxt('r-annualProfit', fmt(annualProfit));
+
+  // Dashboard KPIs
+  setTxt('d-price', fmt(roundedPrice));
+  setTxt('d-profit', fmt(netProfit));
+  setTxt('d-margin', fmtPct(actualMarginPct));
+  setTxt('d-roi', fmtPct(roi));
+  setTxt('d-cost', fmt(totalCost));
+  setTxt('d-be', breakEvenUnits + ' units');
+  setTxt('d-monthly', fmt(monthlyProfit));
+  setTxt('d-annual', fmt(annualProfit));
+
+  // Psychological prices
+  renderPsyPrices(roundedPrice);
+
+  // AI recommendations
+  renderAI(adSpendPctCalc, actualMarginPct, roi, roundedPrice, sellingPrice, totalMktCost, roundedPrice);
+
+  // Charts (if visible)
+  if (document.getElementById('tab-charts').classList.contains('active')) drawCharts();
+  if (document.getElementById('tab-scenarios').classList.contains('active')) renderScenarios();
+}
+
+// ===================== QUICK CALC (DASHBOARD) =====================
+function quickCalc() {
+  const cost = val('q-cost');
+  const margin = val('q-margin');
+  const orders = val('q-orders') || 0;
+  if (!cost) return;
+  const sp = cost / (1 - margin / 100);
+  const profit = sp - cost;
+  const roi = (profit / cost) * 100;
+  const mProfit = profit * orders;
+  setTxt('d-price', fmt(sp));
+  setTxt('d-profit', fmt(profit));
+  setTxt('d-margin', fmtPct(margin));
+  setTxt('d-roi', fmtPct(roi));
+  setTxt('d-cost', fmt(cost));
+  setTxt('d-monthly', fmt(mProfit));
+  setTxt('d-annual', fmt(mProfit * 12));
+}
+
+function setMarginPreset(v) {
+  document.querySelectorAll('.presets .preset-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('q-margin').value = v;
+  document.getElementById('q-margin-range').value = v;
+  quickCalc();
+}
+
+function applyPreset(v) {
+  document.querySelectorAll('.full-card .preset-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('profitMarginInput').value = v;
+  document.getElementById('profitMarginRange').value = v;
+  document.querySelector('input[name=profitType][value=margin]').checked = true;
+  calculate();
+}
+
+// ===================== PSYCHOLOGICAL PRICES =====================
+function renderPsyPrices(price) {
+  const candidates = [99, 149, 199, 249, 299, 399, 499, 599, 699, 799, 999, 1199, 1299, 1399, 1499, 1599, 1699, 1799, 1999, 2499, 2999, 3499, 3999, 4999, 5999, 7999, 9999, 12999, 14999, 19999, 24999, 29999, 49999];
+  const relevant = candidates.filter(p => p >= price * 0.85 && p <= price * 1.4).slice(0, 8);
+  const el = document.getElementById('psyPrices');
+  el.innerHTML = relevant.map(p => `<span class="psy-tag" onclick="applyPsyPrice(${p})">${sym()}${p.toLocaleString('en-IN')}</span>`).join('');
+}
+
+function applyPsyPrice(p) {
+  document.querySelectorAll('.psy-tag').forEach(t => t.style.background = '');
+  event.target.style.background = 'var(--primary)';
+  event.target.style.color = 'white';
+}
+
+// ===================== AI RECOMMENDATIONS =====================
+function renderAI(adPct, marginPct, roi, price, rawPrice, mktCost, sp) {
+  const cards = [];
+
+  if (adPct > 30) {
+    cards.push({ type: 'danger', icon: '🚨', title: 'High Ad Spend Alert', text: `Your ad cost is consuming ${adPct.toFixed(1)}% of revenue. Consider optimizing campaigns or increasing price.` });
+  } else if (adPct > 0) {
+    cards.push({ type: 'info', icon: '📣', title: 'Ad Spend Healthy', text: `Ad spend is ${adPct.toFixed(1)}% of revenue — within acceptable range.` });
+  }
+
+  if (marginPct < 15) {
+    cards.push({ type: 'danger', icon: '⚠️', title: 'Low Profit Margin', text: `Margin of ${marginPct.toFixed(1)}% is below industry standard (20–30%). Consider reducing costs or increasing price.` });
+  } else if (marginPct >= 40) {
+    cards.push({ type: 'success', icon: '🚀', title: 'Excellent Margin', text: `${marginPct.toFixed(1)}% margin is outstanding! This product is highly scalable.` });
+  } else {
+    cards.push({ type: 'success', icon: '✅', title: 'Healthy Margin', text: `${marginPct.toFixed(1)}% profit margin — competitive and sustainable.` });
+  }
+
+  if (roi > 100) {
+    cards.push({ type: 'success', icon: '💹', title: 'Excellent ROI', text: `${roi.toFixed(1)}% ROI is excellent. This product is highly scalable and worth scaling.` });
+  } else if (roi < 30 && roi > 0) {
+    cards.push({ type: 'warning', icon: '📉', title: 'Low ROI', text: `ROI of ${roi.toFixed(1)}% is below optimal. Consider renegotiating supplier cost or reducing overhead.` });
+  }
+
+  const priceDiff = price - rawPrice;
+  if (priceDiff > 0 && priceDiff / rawPrice < 0.1) {
+    cards.push({ type: 'info', icon: '💡', title: 'Price Optimization', text: `Consider increasing price by ${sym()}${(rawPrice * 0.07).toFixed(0)} (7%) for better margin without significant demand loss.` });
+  }
+
+  if (price > 0) {
+    cards.push({ type: 'info', icon: '🧠', title: 'Psychological Pricing', text: `Set price to a .99 or .49 ending. Buyers perceive ${sym()}${Math.ceil(price / 10) * 10 - 1} as significantly cheaper than ${sym()}${Math.ceil(price / 10) * 10}.` });
+  }
+
+  const html = cards.map(c => `<div class="ai-card ${c.type}"><div class="ai-icon">${c.icon}</div><div class="ai-text"><strong>${c.title}</strong>${c.text}</div></div>`).join('');
+  document.getElementById('aiSection').innerHTML = cards.length ? `<div class="section-title"><span></span> 🤖 Smart Recommendations</div><div class="ai-cards">${html}</div>` : '';
+}
+
+// ===================== SCENARIOS =====================
+function renderScenarios() {
+  const tc = results.totalCost || 0;
+  const scenarios = [
+    { label: 'Conservative', mult: 1.15, tag: '15% margin', color: 'var(--warning)' },
+    { label: 'Standard', mult: 1.30, tag: '30% margin', color: 'var(--primary)' },
+    { label: 'Aggressive', mult: 1.60, tag: '60% margin', color: 'var(--secondary)' },
+  ];
+  const best = scenarios.reduce((a, b) => {
+    const ap = a.mult * tc - tc; const bp = b.mult * tc - tc;
+    return (ap / (a.mult * tc)) > (bp / (b.mult * tc)) ? a : b;
+  });
+  const orders = results.expectedOrders || 1;
+  let html = '';
+  scenarios.forEach(s => {
+    const sp = tc * s.mult;
+    const profit = sp - tc;
+    const margin = tc > 0 ? (profit / sp) * 100 : 0;
+    const roi = tc > 0 ? (profit / tc) * 100 : 0;
+    const isBest = s.label === best.label;
+    html += `<div class="scenario-card ${isBest ? 'best' : ''}">
+      <h4>${s.label} ${isBest ? '⭐ Best' : ''}</h4>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:6px">${s.tag}</div>
+      <div class="scenario-price" style="color:${s.color}">${fmt(sp)}</div>
+      <div class="scenario-stats">
+        <div class="scenario-stat"><div class="scenario-stat-label">Profit</div><div class="scenario-stat-val" style="color:var(--success)">${fmt(profit)}</div></div>
+        <div class="scenario-stat"><div class="scenario-stat-label">Margin</div><div class="scenario-stat-val">${fmtPct(margin)}</div></div>
+        <div class="scenario-stat"><div class="scenario-stat-label">ROI</div><div class="scenario-stat-val">${fmtPct(roi)}</div></div>
+        <div class="scenario-stat"><div class="scenario-stat-label">Monthly</div><div class="scenario-stat-val">${fmt(profit * orders)}</div></div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('scenarioGrid').innerHTML = html || '<p style="color:var(--text2);padding:20px">Enter costs in the Costs tab first.</p>';
+}
+
+// ===================== CHARTS =====================
+function drawCharts() {
+  const isDark = !document.body.classList.contains('light');
+  const textColor = isDark ? '#94A3B8' : '#475569';
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+  const tc = results.totalProductCost || 0;
+  const tm = results.totalMktCost || 0;
+  const np = results.netProfit || 0;
+  const sp = results.roundedPrice || 100;
+  const orders = results.expectedOrders || 30;
+
+  // Pie - Cost Breakdown
+  drawPie('costPieChart', ['Product Cost', 'Marketing', 'Returns', 'Tax/Fees'],
+    [tc - (results.returnAmt || 0) - (results.taxAmt || 0), tm, results.returnAmt || 0, results.taxAmt || 0],
+    ['#2563EB', '#7C3AED', '#F59E0B', '#EF4444'], textColor);
+
+  // Bar - Profit Distribution
+  drawBar('profitBarChart',
+    ['Total Cost', 'Gross Profit', 'Net Profit', 'Selling Price'],
+    [results.totalCost || 0, results.grossProfit || 0, np, sp],
+    ['#EF4444', '#F59E0B', '#10B981', '#2563EB'], textColor, gridColor);
+
+  // Bar - Margin Comparison
+  const margins = [15, 20, 25, 30, 40, 50];
+  const prices = margins.map(m => (results.totalCost || 0) / (1 - m / 100));
+  drawBar('marginChart', margins.map(m => m + '%'), prices, Array(6).fill('#7C3AED'), textColor, gridColor, sym());
+
+  // Line - Monthly Revenue Projection
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const revenue = months.map((_, i) => sp * orders * (1 + i * 0.05));
+  const profitLine = months.map((_, i) => np * orders * (1 + i * 0.05));
+  drawLine('revenueChart', months, revenue, profitLine, textColor, gridColor);
+}
+
+function getCtx(id) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
+  if (chartInstances[id]) { chartInstances[id] = null; canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); }
+  return canvas.getContext('2d');
+}
+
+function drawPie(id, labels, data, colors, textColor) {
+  const ctx = getCtx(id); if (!ctx) return;
+  const total = data.reduce((a, b) => a + b, 0) || 1;
+  const canvas = document.getElementById(id);
+  const W = canvas.offsetWidth || 300, H = 220;
+  canvas.width = W; canvas.height = H;
+  let startAngle = -Math.PI / 2;
+  const cx = W / 2, cy = H / 2, r = Math.min(cx, cy) - 30;
+  data.forEach((v, i) => {
+    const angle = (v / total) * 2 * Math.PI;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startAngle, startAngle + angle);
+    ctx.closePath(); ctx.fillStyle = colors[i]; ctx.fill();
+    // label
+    const midAngle = startAngle + angle / 2;
+    const lx = cx + (r + 20) * Math.cos(midAngle);
+    const ly = cy + (r + 20) * Math.sin(midAngle);
+    ctx.fillStyle = textColor; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+    if (v > total * 0.05) ctx.fillText(labels[i], lx, ly);
+    startAngle += angle;
+  });
+  // Legend
+  const legX = 10, legY = H - labels.length * 16 - 4;
+  labels.forEach((l, i) => {
+    ctx.fillStyle = colors[i]; ctx.fillRect(legX, legY + i * 16, 10, 10);
+    ctx.fillStyle = textColor; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(l + ': ' + ((data[i] / total) * 100).toFixed(1) + '%', legX + 14, legY + i * 16 + 9);
+  });
+}
+
+function drawBar(id, labels, data, colors, textColor, gridColor, prefix = '') {
+  const ctx = getCtx(id); if (!ctx) return;
+  const canvas = document.getElementById(id);
+  const W = canvas.offsetWidth || 300, H = 220;
+  canvas.width = W; canvas.height = H;
+  const pad = { t: 20, r: 10, b: 40, l: 50 };
+  const chartW = W - pad.l - pad.r, chartH = H - pad.t - pad.b;
+  const max = Math.max(...data, 1);
+  const barW = (chartW / labels.length) * 0.6;
+  ctx.clearRect(0, 0, W, H);
+  // Grid
+  [0, 0.25, 0.5, 0.75, 1].forEach(frac => {
+    const y = pad.t + chartH * (1 - frac);
+    ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillStyle = textColor; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(prefix + Math.round(max * frac).toLocaleString('en-IN'), pad.l - 4, y + 4);
+  });
+  // Bars
+  labels.forEach((l, i) => {
+    const x = pad.l + (i + 0.5) * (chartW / labels.length) - barW / 2;
+    const barH = (data[i] / max) * chartH;
+    const y = pad.t + chartH - barH;
+    const color = Array.isArray(colors) ? colors[i % colors.length] : colors;
+    ctx.fillStyle = color; ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(x, y, barW, barH, [4, 4, 0, 0]) : ctx.rect(x, y, barW, barH);
+    ctx.fill();
+    ctx.fillStyle = textColor; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(l, x + barW / 2, H - pad.b + 14);
+  });
+}
+
+function drawLine(id, labels, data1, data2, textColor, gridColor) {
+  const ctx = getCtx(id); if (!ctx) return;
+  const canvas = document.getElementById(id);
+  const W = canvas.offsetWidth || 300, H = 220;
+  canvas.width = W; canvas.height = H;
+  const pad = { t: 20, r: 20, b: 40, l: 60 };
+  const chartW = W - pad.l - pad.r, chartH = H - pad.t - pad.b;
+  const max = Math.max(...data1, ...data2, 1);
+  ctx.clearRect(0, 0, W, H);
+  [0, 0.25, 0.5, 0.75, 1].forEach(frac => {
+    const y = pad.t + chartH * (1 - frac);
+    ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillStyle = textColor; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText((max * frac / 1000).toFixed(0) + 'k', pad.l - 4, y + 4);
+  });
+  const drawLinePath = (data, color) => {
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+    data.forEach((v, i) => {
+      const x = pad.l + (i / (data.length - 1)) * chartW;
+      const y = pad.t + chartH - (v / max) * chartH;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    data.forEach((v, i) => {
+      const x = pad.l + (i / (data.length - 1)) * chartW;
+      const y = pad.t + chartH - (v / max) * chartH;
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+    });
+  };
+  drawLinePath(data1, '#2563EB');
+  drawLinePath(data2, '#10B981');
+  // X labels
+  labels.forEach((l, i) => {
+    const x = pad.l + (i / (labels.length - 1)) * chartW;
+    ctx.fillStyle = textColor; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(l, x, H - pad.b + 14);
+  });
+  // Legend
+  ctx.fillStyle = '#2563EB'; ctx.fillRect(pad.l, H - 10, 10, 6);
+  ctx.fillStyle = textColor; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Revenue', pad.l + 14, H - 5);
+  ctx.fillStyle = '#10B981'; ctx.fillRect(pad.l + 70, H - 10, 10, 6);
+  ctx.fillText('Profit', pad.l + 84, H - 5);
+}
+
+// ===================== TOOLS =====================
+function toolCalcs() {
+  // Markup
+  const mkC = val('mkCost'), mkS = val('mkSell');
+  if (mkC && mkS) {
+    setTxt('t-markup', fmtPct((mkS - mkC) / mkC * 100));
+    setTxt('t-margin', fmtPct((mkS - mkC) / mkS * 100));
+  }
+  // VAT
+  const vP = val('vatPrice'), vR = val('vatRate');
+  if (vP) {
+    const vatAmt = vP * (vR / 100);
+    setTxt('t-vatAmt', fmt(vatAmt));
+    setTxt('t-vatTotal', fmt(vP + vatAmt));
+  }
+  // Discount
+  const dP = val('discPrice'), dD = val('discPct');
+  if (dP) {
+    const discAmt = dP * (dD / 100);
+    setTxt('t-discAmt', fmt(discAmt));
+    setTxt('t-discFinal', fmt(dP - discAmt));
+  }
+  // Free Shipping
+  const fsP = val('fsPrice'), fsS = val('fsShip'), fsPr = val('fsProfit');
+  if (fsP) {
+    const afterFreeShip = fsPr - fsS;
+    setTxt('t-fsProfit', fmt(afterFreeShip));
+    setTxt('t-fsImpact', fmtPct(fsP > 0 ? (fsS / fsP) * 100 : 0));
+  }
+  // Bundle
+  const bpU = val('bpUnit'), bpQ = val('bpQty'), bpD = val('bpDisc');
+  if (bpU && bpQ) {
+    const fullPrice = bpU * bpQ;
+    const bundlePrice = fullPrice * (1 - bpD / 100);
+    setTxt('t-bundlePrice', fmt(bundlePrice));
+    setTxt('t-bundleSave', fmt(fullPrice - bundlePrice));
+  }
+  // Marketplace
+  const mpP = val('mpPrice');
+  const mpC = val('mpComm') || parseFloat(document.getElementById('mpPlatform').value);
+  if (mpP) {
+    const commAmt = mpP * (mpC / 100);
+    setTxt('t-mpComm', fmt(commAmt));
+    setTxt('t-mpReceive', fmt(mpP - commAmt));
+  }
+  // Bulk Order
+  const boU = val('boUnit'), boQ = val('boQty'), boD = val('boDisc');
+  if (boU && boQ) {
+    const discUnit = boU * (1 - boD / 100);
+    const total = discUnit * boQ;
+    const savings = (boU * boQ) - total;
+    setTxt('t-boUnit', fmt(discUnit));
+    setTxt('t-boTotal', fmt(total));
+    setTxt('t-boSave', fmt(savings));
+  }
+}
+
+// ===================== TARGET PLANNER =====================
+function plannerCalc() {
+  const goal = val('planGoal');
+  const profitPerProduct = val('planProfit');
+  const days = val('planDays') || 26;
+  if (!goal || !profitPerProduct) return;
+  const monthlyUnits = Math.ceil(goal / profitPerProduct);
+  const dailyUnits = Math.ceil(monthlyUnits / days);
+  const weeklyUnits = Math.ceil(monthlyUnits / 4.33);
+  const annualRevenue = goal * 12;
+  setTxt('p-monthly', monthlyUnits.toLocaleString('en-IN'));
+  setTxt('p-daily', dailyUnits.toLocaleString('en-IN'));
+  setTxt('p-weekly', weeklyUnits.toLocaleString('en-IN'));
+  setTxt('p-annual', fmt(annualRevenue));
+  // Insight
+  let insightHTML = '';
+  if (dailyUnits <= 5) insightHTML = `<div class="ai-card success"><div class="ai-icon">🎯</div><div class="ai-text"><strong>Achievable Goal</strong>Selling ${dailyUnits} units/day is very realistic. Focus on consistent marketing and customer retention.</div></div>`;
+  else if (dailyUnits <= 20) insightHTML = `<div class="ai-card info"><div class="ai-icon">💪</div><div class="ai-text"><strong>Moderate Target</strong>${dailyUnits} units/day requires a solid Facebook Ads strategy and fast delivery logistics.</div></div>`;
+  else insightHTML = `<div class="ai-card warning"><div class="ai-icon">🚀</div><div class="ai-text"><strong>Ambitious Goal</strong>${dailyUnits} units/day is a significant volume. Consider hiring staff, automating fulfillment, and multi-channel advertising.</div></div>`;
+  document.getElementById('plannerInsight').innerHTML = `<div class="ai-cards">${insightHTML}</div>`;
+
+  // Milestones
+  const milestoneGoals = [10000, 25000, 50000, 100000, 250000, 500000, 1000000];
+  let mHtml = '<div style="display:grid;gap:10px;">';
+  milestoneGoals.forEach(m => {
+    const units = Math.ceil(m / (profitPerProduct || 1));
+    const pct = Math.min((goal / m) * 100, 100);
+    const reached = goal >= m;
+    mHtml += `<div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:13px;font-weight:600">${sym()}${m.toLocaleString('en-IN')}/month</span>
+        <span class="badge ${reached ? 'badge-green' : 'badge-yellow'}">${reached ? '✅ On track' : units.toLocaleString('en-IN') + ' units/mo'}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${reached ? 'var(--success)' : 'var(--primary)'}"></div></div>
+    </div>`;
+  });
+  mHtml += '</div>';
+  document.getElementById('milestones').innerHTML = mHtml;
+}
+
+// ===================== SAVE/LOAD PRODUCTS =====================
+function saveProduct() {
+  const name = document.getElementById('saveName').value.trim();
+  if (!name) { alert('Please enter a product name'); return; }
+  const products = JSON.parse(localStorage.getItem('ecomm_products') || '[]');
+  products.unshift({
+    id: Date.now(),
+    name, category: document.getElementById('saveCat').value, sku: document.getElementById('saveSku').value,
+    price: results.roundedPrice || 0, profit: results.netProfit || 0,
+    margin: results.actualMarginPct || 0, roi: results.roi || 0,
+    date: new Date().toLocaleDateString('en-IN')
+  });
+  localStorage.setItem('ecomm_products', JSON.stringify(products));
+  alert('✅ Product saved!');
+  renderSaved();
+}
+
+function renderSaved() {
+  const q = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+  const products = JSON.parse(localStorage.getItem('ecomm_products') || '[]');
+  const filtered = products.filter(p => p.name.toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q));
+  const tbody = document.getElementById('savedTableBody');
+  const noSaved = document.getElementById('noSaved');
+  if (!filtered.length) { tbody.innerHTML = ''; noSaved.style.display = 'block'; return; }
+  noSaved.style.display = 'none';
+  tbody.innerHTML = filtered.map(p => `<tr>
+    <td style="font-weight:700">${p.name}</td>
+    <td>${p.category || '-'}</td>
+    <td style="font-size:11px;color:var(--text2)">${p.sku || '-'}</td>
+    <td style="font-weight:700;color:var(--primary)">${fmt(p.price)}</td>
+    <td style="color:var(--success)">${fmt(p.profit)}</td>
+    <td><span class="badge ${p.margin >= 30 ? 'badge-green' : p.margin >= 15 ? 'badge-yellow' : 'badge-red'}">${fmtPct(p.margin)}</span></td>
+    <td>${fmtPct(p.roi)}</td>
+    <td style="color:var(--text2);font-size:11px">${p.date}</td>
+    <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="deleteProduct(${p.id})">🗑️</button></td>
+  </tr>`).join('');
+}
+
+function deleteProduct(id) {
+  const products = JSON.parse(localStorage.getItem('ecomm_products') || '[]');
+  localStorage.setItem('ecomm_products', JSON.stringify(products.filter(p => p.id !== id)));
+  renderSaved();
+}
+
+function clearSaved() {
+  if (confirm('Clear all saved products?')) { localStorage.removeItem('ecomm_products'); renderSaved(); }
+}
+
+// ===================== EXPORT =====================
+function downloadPDF() {
+  const content = `E-commerce Profit & Pricing Calculator Report
+Generated: ${new Date().toLocaleString('en-IN')}
+Currency: ${currency}
+
+=== PRICING RESULTS ===
+Total Cost Per Product: ${fmt(results.totalCost || 0)}
+Suggested Selling Price: ${fmt(results.sellingPrice || 0)}
+Rounded Selling Price: ${fmt(results.roundedPrice || 0)}
+Desired Profit: ${fmt(results.desiredProfit || 0)}
+
+=== PROFITABILITY ===
+Gross Profit: ${fmt(results.grossProfit || 0)}
+Net Profit: ${fmt(results.netProfit || 0)}
+Profit Margin: ${fmtPct(results.actualMarginPct || 0)}
+Markup: ${fmtPct(results.markup || 0)}
+ROI: ${fmtPct(results.roi || 0)}
+
+=== BREAK EVEN ===
+Break Even Units: ${results.breakEvenUnits || 0}
+Break Even Sales: ${fmt(results.breakEvenSales || 0)}
+
+=== PROJECTIONS ===
+Monthly Profit: ${fmt(results.monthlyProfit || 0)}
+Annual Profit: ${fmt(results.annualProfit || 0)}
+`;
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'ecommerce-report.txt'; a.click();
+}
+
+function exportCSV() {
+  const rows = [
+    ['Metric', 'Value'],
+    ['Total Product Cost', results.totalProductCost || 0],
+    ['Total Marketing Cost', results.totalMktCost || 0],
+    ['Total Cost', results.totalCost || 0],
+    ['Selling Price', results.roundedPrice || 0],
+    ['Net Profit', results.netProfit || 0],
+    ['Profit Margin %', (results.actualMarginPct || 0).toFixed(2)],
+    ['ROI %', (results.roi || 0).toFixed(2)],
+    ['Break Even Units', results.breakEvenUnits || 0],
+    ['Monthly Profit', results.monthlyProfit || 0],
+    ['Annual Profit', results.annualProfit || 0],
+  ];
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'ecommerce-data.csv'; a.click();
+}
+
+function resetAll() {
+  if (!confirm('Reset all inputs?')) return;
+  document.querySelectorAll('input[type=number]').forEach(i => { if (!i.readOnly) i.value = ''; });
+  results = {};
+  calculate();
+}
+
+// ===================== INIT =====================
+window.addEventListener('resize', () => {
+  if (document.getElementById('tab-charts').classList.contains('active')) drawCharts();
+});
+calculate();
+plannerCalc();
+</script>
+</body>
+</html>
